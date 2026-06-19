@@ -45,3 +45,11 @@ CREATE TABLE ml_predictions (
     risk_score FLOAT NOT NULL,
     prediction_date TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE training_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    content TEXT NOT NULL,
+    actual_intent VARCHAR(50) NOT NULL,
+    language VARCHAR(10),
+    added_at TIMESTAMP DEFAULT NOW()
+);

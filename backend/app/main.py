@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.interfaces.api import routes
 
-app = FastAPI(title="AlloDocIA API", version="1.0.0")
+app = FastAPI(title="AlloDoc API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,4 +19,4 @@ app.include_router(routes.router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to AlloDocIA API"}
+    return {"message": "Welcome to AlloDoc API"}
