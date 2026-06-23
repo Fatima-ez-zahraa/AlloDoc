@@ -25,8 +25,7 @@ export function BrandLogo({
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-white shadow-sm",
-        tone === "dark" ? "border-teal-700" : "border-teal-100",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden",
         sizeClasses[size],
         className,
       )}

@@ -1,107 +1,81 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Activity, CalendarDays, MessageCircle, Users } from "lucide-react";
-import { BrandLogo } from "@/components/brand-logo";
-import { apiFetch } from "@/lib/api";
-
-type HealthResponse = {
-  status: string;
-  service: string;
-};
+import { Activity, CalendarDays, MessageCircle, ArrowRight, ShieldCheck, PlayCircle, Zap } from "lucide-react";
 
 export default function Home() {
-  const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">("checking");
-
-  useEffect(() => {
-    apiFetch<HealthResponse>("/api/v1/health")
-      .then(() => setApiStatus("online"))
-      .catch(() => setApiStatus("offline"));
-  }, []);
-
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between md:py-5 md:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <BrandLogo priority size="md" />
+    <main className="flex min-h-[calc(100vh-80px)] flex-col items-center pt-20 pb-16 px-4">
+      {/* Dark theme background glows */}
+      <div className="pointer-events-none absolute left-1/4 top-1/4 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-teal/5 blur-[120px]" />
+      <div className="pointer-events-none absolute right-1/4 bottom-1/4 -z-10 h-[400px] w-[400px] translate-x-1/2 translate-y-1/2 rounded-full bg-brand-teal/5 blur-[100px]" />
+      
+      <div className="flex w-full max-w-5xl flex-col items-center text-center">
+        <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-teal/30 bg-brand-card px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-teal">
+          <Zap className="h-4 w-4" />
+          Intelligence Artificielle Médicale
+        </span>
+        
+        <h1 className="text-5xl font-black tracking-tight text-white md:text-7xl lg:text-[5.5rem] leading-tight">
+          OÙ L'INNOVATION<br/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-teal-200">RENCONTRE LA SANTÉ</span>
+        </h1>
+        <p className="mt-6 max-w-2xl text-lg font-medium text-slate-400 md:text-xl">
+          AlloDoc automatise la prise de rendez-vous et réduit l'absentéisme grâce à un assistant virtuel 24/7. Simple. Rapide. Efficace.
+        </p>
+
+        <div className="mt-10 flex w-full flex-col gap-4 sm:flex-row sm:justify-center items-center">
+          <Link 
+            href="/chat" 
+            className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-brand-teal px-8 text-base font-bold text-brand-dark shadow-[0_0_20px_rgba(22,163,181,0.3)] transition-all hover:bg-teal-400 hover:shadow-[0_0_30px_rgba(22,163,181,0.5)] sm:w-auto"
+          >
+            <MessageCircle className="h-5 w-5" />
+            Essayer l'Assistant
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
-          <nav className="flex flex-wrap items-center gap-2 justify-center md:justify-end">
-            <Link href="/chat" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Chat
-            </Link>
-            <Link href="/admin/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              Admin
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      <section className="mx-auto grid min-h-[calc(100vh-6rem)] w-full max-w-6xl items-center gap-10 px-6 py-10 lg:grid-cols-[1.05fr_0.95fr]">
-        <div>
-          <div className="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-teal-100 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
-            <span
-              className={
-                apiStatus === "online"
-                  ? "h-2.5 w-2.5 rounded-full bg-emerald-500"
-                  : apiStatus === "offline"
-                    ? "h-2.5 w-2.5 rounded-full bg-red-500"
-                    : "h-2.5 w-2.5 rounded-full bg-amber-400"
-              }
-            />
-            {/* Backend FastAPI : {apiStatus === "online" ? "connecté" : apiStatus === "offline" ? "hors ligne" : "vérification"} */}
-          </div>
-
-          <h1 className="text-5xl font-extrabold tracking-tight text-teal-800 md:text-6xl">
-            AlloDoc
-          </h1>
-          <p className="mt-6 max-w-2xl text-xl leading-8 text-slate-600">
-            Assistant médical intelligent pour les cabinets marocains : chat patient, suivi des rendez-vous
-          </p>
-
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Link
-              href="/chat"
-              className="inline-flex h-12 items-center gap-2 rounded-lg bg-teal-700 px-5 font-medium text-white shadow-sm transition hover:bg-teal-800"
-            >
-              <MessageCircle className="h-5 w-5" />
-              Ouvrir le chat
-            </Link>
-            <Link
-              href="/admin/dashboard"
-              className="inline-flex h-12 items-center gap-2 rounded-lg border border-teal-700 bg-white px-5 font-medium text-teal-700 transition hover:bg-teal-50"
-            >
-              <Activity className="h-5 w-5" />
-              Voir le tableau de bord
-            </Link>
-          </div>
+          
+          <Link 
+            href="/admin/dashboard" 
+            className="flex h-14 w-full items-center justify-center gap-3 rounded-full border border-slate-600 bg-transparent px-8 text-base font-bold text-white transition-all hover:border-brand-teal hover:bg-brand-card hover:text-brand-teal sm:w-auto"
+          >
+            <PlayCircle className="h-5 w-5" />
+            Espace Praticien
+          </Link>
         </div>
 
-        <div className="grid gap-4">
-          <div className="rounded-lg border border-teal-100 bg-white p-5 shadow-sm">
-            <BrandLogo priority size="lg" className="mx-auto border-0 shadow-none" imageClassName="p-0" />
+        {/* Feature Cards Grid (Inspired by the dark theme image) */}
+        <div className="mt-24 grid w-full grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="group flex flex-col rounded-[2rem] bg-brand-card p-8 shadow-xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-teal/10 border border-white/5">
+            <div className="mb-6 inline-flex rounded-2xl bg-brand-dark p-4 text-brand-teal shadow-inner border border-white/5">
+              <MessageCircle className="h-8 w-8" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3 text-left">Chat Patient IA</h3>
+            <p className="text-slate-400 text-sm text-left leading-relaxed">
+              Support multilingue (Français, Arabe, Darija) instantané pour filtrer et répondre aux requêtes de vos patients.
+            </p>
+          </div>
+          
+          <div className="group flex flex-col rounded-[2rem] bg-brand-card p-8 shadow-xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-teal/10 border border-white/5">
+            <div className="mb-6 inline-flex rounded-2xl bg-brand-dark p-4 text-brand-teal shadow-inner border border-white/5">
+              <CalendarDays className="h-8 w-8" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3 text-left">Gestion Optimisée</h3>
+            <p className="text-slate-400 text-sm text-left leading-relaxed">
+              Synchronisation calendrier, relances automatiques et remplissage intelligent de la liste d'attente.
+            </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Link href="/chat" className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-200 hover:bg-teal-50">
-              <MessageCircle className="mb-3 h-5 w-5 text-teal-700" />
-              <p className="font-semibold text-slate-900">Chat patient</p>
-              <p className="mt-1 text-sm text-slate-500">Réponses via API</p>
-            </Link>
-            <Link href="/admin/appointments" className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-200 hover:bg-teal-50">
-              <CalendarDays className="mb-3 h-5 w-5 text-teal-700" />
-              <p className="font-semibold text-slate-900">Rendez-vous</p>
-              <p className="mt-1 text-sm text-slate-500">Suivi clinique</p>
-            </Link>
-            <Link href="/admin/patients" className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-200 hover:bg-teal-50">
-              <Users className="mb-3 h-5 w-5 text-teal-700" />
-              <p className="font-semibold text-slate-900">Patients</p>
-              <p className="mt-1 text-sm text-slate-500">Historique</p>
-            </Link>
+          <div className="group flex flex-col rounded-[2rem] bg-brand-card p-8 shadow-xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-teal/10 border border-white/5">
+            <div className="mb-6 inline-flex rounded-2xl bg-brand-dark p-4 text-brand-teal shadow-inner border border-white/5">
+              <ShieldCheck className="h-8 w-8" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3 text-left">Prédiction No-Show</h3>
+            <p className="text-slate-400 text-sm text-left leading-relaxed">
+              Modèle ML prédictif pour identifier les patients à risque d'absence et déclencher des workflows préventifs.
+            </p>
           </div>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

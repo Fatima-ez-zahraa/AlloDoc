@@ -14,6 +14,8 @@ const config: Config = {
         "brand-navy": "#113A5C",
         "brand-teal": "#16A3B5",
         "brand-light": "#F0F8FA",
+        "brand-dark": "#0B171C",
+        "brand-card": "#13252C",
         card: {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
