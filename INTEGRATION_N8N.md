@@ -109,7 +109,7 @@ Depuis le frontend, envoyer directement aux webhooks N8N (bypass backend) :
 // Méthode 2 du ChatWidget
 const result = await N8NClient.sendChatMessageDirect(
   "Mon message",
-  "web-user-123"
+  "web-user-123",
 );
 ```
 
@@ -138,21 +138,25 @@ export default function AppointmentForm() {
 D'après ta demande, voici les workflows à créer dans N8N :
 
 ### 1. Workflow Chat (`allodoc-message`)
+
 - Webhook reçoit le message du chat
 - Traite le message avec IA
 - Envoie la réponse back
 
 ### 2. Workflow Prise de RDV (`allodoc-book-appointment`)
+
 - Reçoit les détails du RDV
 - Crée l'entrée en base de données
 - Envoie confirmation WhatsApp
 
 ### 3. Workflow Annulation (`allodoc-cancel-appointment`)
+
 - Reçoit l'ID du RDV
 - Annule dans la base de données
 - Envoie notification WhatsApp
 
 ### 4. Workflow Rappel (`allodoc-reminder`)
+
 - Déclenché J-1 du RDV
 - Envoie rappel WhatsApp ou Email
 - Enregistre l'interaction
@@ -160,14 +164,17 @@ D'après ta demande, voici les workflows à créer dans N8N :
 ## Erreurs courantes
 
 ### 1. "N8N webhook error: Connection refused"
+
 - Vérifier que `N8N_BASE_URL` est correct
 - Vérifier la connexion internet
 
 ### 2. "404 Not Found" sur le webhook
+
 - Vérifier que le chemin du webhook existe dans N8N
 - Exemple: `https://ikramkanouz.app.n8n.cloud/webhook/allodoc-message`
 
 ### 3. CORS error depuis le frontend
+
 - Si tu appelles directement N8N depuis le frontend, N8N doit autoriser les CORS
 - Alternative: toujours passer par le backend
 
