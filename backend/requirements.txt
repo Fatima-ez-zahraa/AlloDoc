@@ -9,3 +9,4 @@ sentence-transformers==2.2.2
 pandas==2.1.0
 numpy==1.25.2
 xgboost==1.7.6
+httpx==0.24.1
