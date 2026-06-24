@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
+import { WhatsAppButton } from "@/components/whatsapp-button";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className={cn(inter.className, "bg-brand-dark text-white antialiased selection:bg-brand-teal/30 selection:text-white")}>
         <Navbar />
         {children}
+        <WhatsAppButton />
       </body>
     </html>
   );

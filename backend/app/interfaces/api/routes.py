@@ -1,18 +1,38 @@
+import os
+import urllib.request
+import urllib.parse
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Dict, Any
-import urllib.request
-import urllib.parse
-import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from app.db.session import get_db
 from app.core.ai_engine import assistant_ia
 from app.models.database import Patient, Doctor, Appointment, Message, MLPrediction, TrainingMessage, Waitlist
 
 router = APIRouter()
+
+N8N_BASE_URL = os.getenv("N8N_BASE_URL", "https://ikramkanouz.app.n8n.cloud")
+N8N_WEBHOOK_WHATSAPP = os.getenv(
+    "N8N_WEBHOOK_WHATSAPP",
+    f"{N8N_BASE_URL}/webhook/tpZtI1oDWrhAzWDc"
+)
+N8N_WEBHOOK_APPOINTMENT_BOOKED = os.getenv(
+    "N8N_WEBHOOK_APPOINTMENT_BOOKED",
+    f"{N8N_BASE_URL}/webhook/appointment-booked"
+)
+N8N_WEBHOOK_WAITLIST_FILL = os.getenv(
+    "N8N_WEBHOOK_WAITLIST_FILL",
+    f"{N8N_BASE_URL}/webhook/waitlist-fill"
+)
+N8N_WEBHOOK_WHATSAPP_FALLBACK = f"{N8N_BASE_URL}/webhook/whatsapp-webhook"
 
 # ───────── Authentication ─────────
 
@@ -199,13 +219,13 @@ def book_appointment(req: BookRequest, db: Session = Depends(get_db)):
     db.commit()
     
     try:
-        n8n_url = "http://n8n:5678/webhook/appointment-booked"
+        n8n_url = N8N_WEBHOOK_APPOINTMENT_BOOKED
         req_n8n = urllib.request.Request(
             n8n_url,
             data=json.dumps({"appointment_id": str(apt.id), "patient": patient.full_name, "time": req.appointment_time}).encode("utf-8"),
             headers={"Content-Type": "application/json"}
         )
-        urllib.request.urlopen(req_n8n, timeout=1)
+        urllib.request.urlopen(req_n8n, timeout=3)
     except Exception as e:
         print(f"n8n webhook notification skipped: {e}")
         
@@ -263,13 +283,13 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db)):
     wait_list = db.query(Waitlist).filter(Waitlist.doctor_id == apt.doctor_id).first()
     if wait_list:
         try:
-            n8n_url = "http://n8n:5678/webhook/waitlist-fill"
+            n8n_url = N8N_WEBHOOK_WAITLIST_FILL
             req_n8n = urllib.request.Request(
                 n8n_url,
                 data=json.dumps({"cancelled_appointment_id": str(apt.id), "waitlist_id": str(wait_list.id)}).encode("utf-8"),
                 headers={"Content-Type": "application/json"}
             )
-            urllib.request.urlopen(req_n8n, timeout=1)
+            urllib.request.urlopen(req_n8n, timeout=3)
         except Exception as e:
             print(f"n8n waitlist notification skipped: {e}")
             
@@ -515,8 +535,6 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
 # ───────── WhatsApp Webhook ─────────
 
-N8N_WEBHOOK_URL = "https://ikramkanouz.app.n8n.cloud/webhook/tpZtI1oDWrhAzWDc"
-
 @router.post("/webhooks/whatsapp")
 def whatsapp_webhook(payload: dict, db: Session = Depends(get_db)):
     message_text = payload.get("message", "")
@@ -550,14 +568,14 @@ def whatsapp_webhook(payload: dict, db: Session = Depends(get_db)):
     }
     
     n8n_status = []
-    for url in [N8N_WEBHOOK_URL, "http://n8n:5678/webhook/whatsapp-webhook"]:
+    for url in [N8N_WEBHOOK_WHATSAPP, N8N_WEBHOOK_WHATSAPP_FALLBACK]:
         try:
             req = urllib.request.Request(
                 url,
                 data=json.dumps(enriched_payload).encode('utf-8'),
                 headers={'Content-Type': 'application/json'}
             )
-            urllib.request.urlopen(req, timeout=1)
+            urllib.request.urlopen(req, timeout=3)
             n8n_status.append(f"triggered successfully")
         except Exception as e:
             n8n_status.append(f"failed ({str(e)})")
