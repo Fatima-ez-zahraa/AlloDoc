@@ -7,12 +7,40 @@ from typing import List, Optional, Dict, Any
 import urllib.request
 import urllib.parse
 import json
+import os
+import uuid
 
 from app.db.session import get_db
 from app.core.ai_engine import assistant_ia
 from app.models.database import Patient, Doctor, Appointment, Message, MLPrediction, TrainingMessage, Waitlist
 
 router = APIRouter()
+
+N8N_APPOINTMENT_BOOKED_WEBHOOK_URL = os.getenv(
+    "N8N_APPOINTMENT_BOOKED_WEBHOOK_URL",
+    "http://n8n:5678/webhook/appointment-booked",
+)
+N8N_WAITLIST_FILL_WEBHOOK_URL = os.getenv(
+    "N8N_WAITLIST_FILL_WEBHOOK_URL",
+    "http://n8n:5678/webhook/waitlist-fill",
+)
+N8N_WHATSAPP_WEBHOOK_URL = os.getenv(
+    "N8N_WHATSAPP_WEBHOOK_URL",
+    "https://ikramkanouz.app.n8n.cloud/webhook/tpZtI1oDWrhAzWDc",
+)
+
+
+def notify_n8n(url: str, payload: dict, timeout: int = 3) -> str:
+    if not url:
+        return "disabled"
+
+    req_n8n = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    urllib.request.urlopen(req_n8n, timeout=timeout)
+    return "triggered successfully"
 
 # ───────── Authentication ─────────
 
@@ -72,7 +100,12 @@ def get_patients(db: Session = Depends(get_db)):
 
 @router.get("/patients/{patient_id}/history")
 def get_patient_history(patient_id: str, db: Session = Depends(get_db)):
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    try:
+        patient_uuid = uuid.UUID(patient_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Identifiant patient invalide")
+
+    patient = db.query(Patient).filter(Patient.id == patient_uuid).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient introuvable")
     
@@ -199,15 +232,17 @@ def book_appointment(req: BookRequest, db: Session = Depends(get_db)):
     db.commit()
     
     try:
-        n8n_url = "http://n8n:5678/webhook/appointment-booked"
-        req_n8n = urllib.request.Request(
-            n8n_url,
-            data=json.dumps({"appointment_id": str(apt.id), "patient": patient.full_name, "time": req.appointment_time}).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
-        urllib.request.urlopen(req_n8n, timeout=1)
+        notify_n8n(N8N_APPOINTMENT_BOOKED_WEBHOOK_URL, {
+            "appointment_id": str(apt.id),
+            "patient_id": str(patient.id),
+            "patient": patient.full_name,
+            "phone": patient.phone_number,
+            "doctor_id": str(req.doctor_id),
+            "time": req.appointment_time,
+            "risk_score": risk_score,
+        })
     except Exception as e:
-        print(f"n8n webhook notification skipped: {e}")
+        print(f"n8n appointment webhook notification skipped: {e}")
         
     return {"status": "success", "message": "Appointment booked", "appointment_id": str(apt.id), "risk_score": risk_score}
 
@@ -263,13 +298,11 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db)):
     wait_list = db.query(Waitlist).filter(Waitlist.doctor_id == apt.doctor_id).first()
     if wait_list:
         try:
-            n8n_url = "http://n8n:5678/webhook/waitlist-fill"
-            req_n8n = urllib.request.Request(
-                n8n_url,
-                data=json.dumps({"cancelled_appointment_id": str(apt.id), "waitlist_id": str(wait_list.id)}).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-            urllib.request.urlopen(req_n8n, timeout=1)
+            notify_n8n(N8N_WAITLIST_FILL_WEBHOOK_URL, {
+                "cancelled_appointment_id": str(apt.id),
+                "waitlist_id": str(wait_list.id),
+                "doctor_id": str(apt.doctor_id),
+            })
         except Exception as e:
             print(f"n8n waitlist notification skipped: {e}")
             
@@ -391,6 +424,188 @@ def delete_from_waitlist(waitlist_id: str, db: Session = Depends(get_db)):
     db.delete(wl)
     db.commit()
     return {"status": "success", "message": "Patient retiré de la liste d'attente"}
+
+# ───────── AI Vocabulary & Training ─────────
+
+class PhraseCreateRequest(BaseModel):
+    content: str
+    actual_intent: str
+    language: str
+
+class TestAIRequest(BaseModel):
+    text: str
+
+@router.get("/ai/phrases")
+def get_ai_phrases(db: Session = Depends(get_db)):
+    phrases = db.query(TrainingMessage).order_by(TrainingMessage.added_at.desc()).all()
+    return {
+        "status": "success",
+        "data": [
+            {
+                "id": str(p.id),
+                "content": p.content,
+                "intent": p.actual_intent,
+                "language": p.language,
+                "added_at": p.added_at.isoformat() if p.added_at else None
+            }
+            for p in phrases
+        ]
+    }
+
+@router.post("/ai/phrases")
+def add_ai_phrase(req: PhraseCreateRequest, db: Session = Depends(get_db)):
+    phrase_text = req.content.strip()
+    if not phrase_text:
+        raise HTTPException(status_code=400, detail="Le contenu de la phrase ne peut pas être vide.")
+    
+    # Create new training message
+    p = TrainingMessage(
+        content=phrase_text,
+        actual_intent=req.actual_intent,
+        language=req.language
+    )
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    
+    # Reload engine knowledge cache
+    assistant_ia.load_db_knowledge()
+    
+    return {
+        "status": "success",
+        "message": "Phrase ajoutée avec succès",
+        "data": {
+            "id": str(p.id),
+            "content": p.content,
+            "intent": p.actual_intent,
+            "language": p.language
+        }
+    }
+
+@router.put("/ai/phrases/{phrase_id}")
+def update_ai_phrase(phrase_id: str, req: PhraseCreateRequest, db: Session = Depends(get_db)):
+    phrase_text = req.content.strip()
+    p = db.query(TrainingMessage).filter(TrainingMessage.id == phrase_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Phrase introuvable")
+        
+    if not phrase_text:
+        raise HTTPException(status_code=400, detail="Le contenu de la phrase ne peut pas être vide.")
+        
+    p.content = phrase_text
+    p.actual_intent = req.actual_intent
+    p.language = req.language
+    db.commit()
+    
+    # Reload engine knowledge cache
+    assistant_ia.load_db_knowledge()
+    
+    return {
+        "status": "success",
+        "message": "Phrase mise à jour avec succès"
+    }
+
+@router.delete("/ai/phrases/{phrase_id}")
+def delete_ai_phrase(phrase_id: str, db: Session = Depends(get_db)):
+    p = db.query(TrainingMessage).filter(TrainingMessage.id == phrase_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Phrase introuvable")
+        
+    db.delete(p)
+    db.commit()
+    
+    # Reload engine knowledge cache
+    assistant_ia.load_db_knowledge()
+    
+    return {
+        "status": "success",
+        "message": "Phrase supprimée avec succès"
+    }
+
+@router.post("/ai/train")
+def train_ai(db: Session = Depends(get_db)):
+    try:
+        msgs = db.query(TrainingMessage).all()
+        texts = [m.content for m in msgs]
+        labels = [m.actual_intent for m in msgs]
+        
+        # Load and train
+        assistant_ia.train_ml(texts, labels)
+        
+        return {
+            "status": "success",
+            "message": f"Moteur IA mis à jour et entraîné sur {len(msgs)} exemples."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur d'entraînement: {str(e)}")
+
+@router.post("/ai/test")
+def test_ai(req: TestAIRequest, db: Session = Depends(get_db)):
+    text = req.text.strip()
+    if not text:
+        return {"status": "error", "reply": "Veuillez écrire un texte de test."}
+        
+    language = assistant_ia.detect_language(text)
+    intent_data = assistant_ia.classify_intent(text)
+    intent = intent_data["intent"]
+    
+    # Simulate the reply generation logic
+    reply = ""
+    if intent == "BOOK_APPOINTMENT":
+        doc = db.query(Doctor).first()
+        doc_name = doc.name if doc else "Médecin"
+        if language == "fr":
+            reply = f"Je vois que vous souhaitez prendre rendez-vous. J'ai pré-réservé un créneau pour demain à 10h00 avec le {doc_name}. Cela vous convient-il ?"
+        elif language == "ar":
+            reply = f"يبدو أنك تريد حجز موعد. لقد قمت بحجز موعد مبدئي غدًا في الساعة 10:00 صباحًا مع {doc_name}. هل هذا مناسب لك؟"
+        elif language == "darija":
+            reply = f"بغيتي تاخد موعد، راني رزيرفيت ليك غدا مع 10:00 عند {doc_name}. واش مزيان؟"
+        else:
+            reply = f"I see you want to book an appointment. I have pre-booked a slot for tomorrow at 10:00 AM with {doc_name}. Does that work for you?"
+            
+    elif intent == "CANCEL_APPOINTMENT":
+        if language == "fr": reply = "C'est noté, je viens d'annuler votre rendez-vous pré-réservé."
+        elif language == "ar": reply = "لقد سجلت ذلك، لقد قمت بإلغاء موعدك المحجوز."
+        elif language == "darija": reply = "واخا، راني لغيت الموعد اللي كنتي شاد."
+        else: reply = "Noted, I have cancelled your pre-booked appointment."
+            
+    elif intent == "GENERAL_QUESTION":
+        if language == "fr":
+            reply = "Le cabinet est ouvert du lundi au vendredi de 9h à 18h. L'adresse est 123 Rue de la Santé, Casablanca."
+        elif language == "ar":
+            reply = "العيادة مفتوحة من الاثنين إلى الجمعة من الساعة 9 صباحًا حتى 6 مساءً. العنوان: 123 شارع الصحة، الدار البيضاء."
+        elif language == "darija":
+            reply = "الكلينيك كيحلو من الاثنين تال الجمعة، من 9 د الصباح تال 6 د العشية. العنوان هو 123 شارع الصحة، كازا."
+        else:
+            reply = "The clinic is open Monday to Friday, 9 AM to 6 PM. Address: 123 Rue de la Sante, Casablanca."
+    elif intent == "GREETING":
+        if language == "fr":
+            reply = "Bonjour ! Je suis l'assistant intelligent AlloDoc. Comment puis-je vous aider aujourd'hui ?"
+        elif language == "ar":
+            reply = "مرحباً! أنا مساعد AlloDoc الذكي. كيف يمكنني مساعدتك اليوم؟"
+        elif language == "darija":
+            reply = "Salam! Ana l'assistant AlloDoc. Kifach n9dar n3awnk lyouma?"
+        else:
+            reply = "Hello! I am the AlloDoc intelligent assistant. How can I help you today?"
+    else:
+        if language == "fr":
+            reply = "Désolé, je n'ai pas bien compris votre demande. Je peux vous aider à prendre ou annuler un rendez-vous."
+        elif language == "ar":
+            reply = "معذرة، لم أفهم طلبك جيدًا. يمكنني مساعدتك في حجز المواعيد أو إلغائها."
+        elif language == "darija":
+            reply = "Smeh lia, mafhmtch mzyan chnou bghiti. N9dr n3awnk takhod wla tlghi rdv."
+        else:
+            reply = "Sorry, I didn't quite understand that. I can help you book or cancel an appointment."
+            
+    return {
+        "status": "success",
+        "detected_language": language,
+        "detected_intent": intent,
+        "confidence": intent_data.get("confidence", 0.0),
+        "method": intent_data.get("method", "fallback"),
+        "matched_phrase": intent_data.get("matched_phrase", None),
+        "reply": reply
+    }
 
 # ───────── Chat Assistant ─────────
 
@@ -515,8 +730,6 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
 # ───────── WhatsApp Webhook ─────────
 
-N8N_WEBHOOK_URL = "https://ikramkanouz.app.n8n.cloud/webhook/tpZtI1oDWrhAzWDc"
-
 @router.post("/webhooks/whatsapp")
 def whatsapp_webhook(payload: dict, db: Session = Depends(get_db)):
     message_text = payload.get("message", "")
@@ -550,15 +763,9 @@ def whatsapp_webhook(payload: dict, db: Session = Depends(get_db)):
     }
     
     n8n_status = []
-    for url in [N8N_WEBHOOK_URL, "http://n8n:5678/webhook/whatsapp-webhook"]:
+    for url in [N8N_WHATSAPP_WEBHOOK_URL, "http://n8n:5678/webhook/whatsapp-webhook"]:
         try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(enriched_payload).encode('utf-8'),
-                headers={'Content-Type': 'application/json'}
-            )
-            urllib.request.urlopen(req, timeout=1)
-            n8n_status.append(f"triggered successfully")
+            n8n_status.append(notify_n8n(url, enriched_payload))
         except Exception as e:
             n8n_status.append(f"failed ({str(e)})")
             

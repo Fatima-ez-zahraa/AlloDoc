@@ -80,14 +80,65 @@ def init_db():
             
             # 7. Training Messages seed
             t_msgs = [
+                # BOOK_APPOINTMENT
                 TrainingMessage(content="je veux prendre rdv", actual_intent="BOOK_APPOINTMENT", language="fr"),
+                TrainingMessage(content="pouvez-vous me réserver un rendez-vous ?", actual_intent="BOOK_APPOINTMENT", language="fr"),
+                TrainingMessage(content="je souhaite voir le médecin s'il vous plaît", actual_intent="BOOK_APPOINTMENT", language="fr"),
+                TrainingMessage(content="est-il possible de fixer une consultation ?", actual_intent="BOOK_APPOINTMENT", language="fr"),
+                TrainingMessage(content="I want to book an appointment", actual_intent="BOOK_APPOINTMENT", language="en"),
+                TrainingMessage(content="can I get a consultation tomorrow?", actual_intent="BOOK_APPOINTMENT", language="en"),
+                TrainingMessage(content="schedule a visit with the doctor", actual_intent="BOOK_APPOINTMENT", language="en"),
+                TrainingMessage(content="أريد حجز موعد طبي", actual_intent="BOOK_APPOINTMENT", language="ar"),
+                TrainingMessage(content="هل يمكنني تسجيل موعد مع الطبيب؟", actual_intent="BOOK_APPOINTMENT", language="ar"),
+                TrainingMessage(content="أريد مقابلة الدكتور غدا", actual_intent="BOOK_APPOINTMENT", language="ar"),
                 TrainingMessage(content="bghit nchouf tbib", actual_intent="BOOK_APPOINTMENT", language="darija"),
-                TrainingMessage(content="annuler rdv", actual_intent="CANCEL_APPOINTMENT", language="darija"),
-                TrainingMessage(content="horaires de la clinique", actual_intent="GENERAL_QUESTION", language="fr"),
-                TrainingMessage(content="baghi n'annuler rendez-vous", actual_intent="CANCEL_APPOINTMENT", language="darija"),
+                TrainingMessage(content="bghit nakhod rdv", actual_intent="BOOK_APPOINTMENT", language="darija"),
+                TrainingMessage(content="chouf lia chi wa9t khawi", actual_intent="BOOK_APPOINTMENT", language="darija"),
+                TrainingMessage(content="3afak bghit ndir rendez vous", actual_intent="BOOK_APPOINTMENT", language="darija"),
+
+                # CANCEL_APPOINTMENT
+                TrainingMessage(content="je veux annuler mon rendez-vous", actual_intent="CANCEL_APPOINTMENT", language="fr"),
+                TrainingMessage(content="je ne viendrai pas à ma consultation", actual_intent="CANCEL_APPOINTMENT", language="fr"),
+                TrainingMessage(content="veuillez supprimer ma réservation de demain", actual_intent="CANCEL_APPOINTMENT", language="fr"),
                 TrainingMessage(content="please cancel my appointment", actual_intent="CANCEL_APPOINTMENT", language="en"),
-                TrainingMessage(content="أريد حجز موعد", actual_intent="BOOK_APPOINTMENT", language="ar"),
-                TrainingMessage(content="فين كاينين", actual_intent="GENERAL_QUESTION", language="darija"),
+                TrainingMessage(content="I need to cancel my booking", actual_intent="CANCEL_APPOINTMENT", language="en"),
+                TrainingMessage(content="I can't make it to my consultation", actual_intent="CANCEL_APPOINTMENT", language="en"),
+                TrainingMessage(content="يرجى إلغاء موعدي المحجوز", actual_intent="CANCEL_APPOINTMENT", language="ar"),
+                TrainingMessage(content="أود إلغاء الحجز من فضلكم", actual_intent="CANCEL_APPOINTMENT", language="ar"),
+                TrainingMessage(content="لن أستطيع الحضور للعيادة", actual_intent="CANCEL_APPOINTMENT", language="ar"),
+                TrainingMessage(content="annuler rdv", actual_intent="CANCEL_APPOINTMENT", language="darija"),
+                TrainingMessage(content="baghi n'annuler rendez-vous", actual_intent="CANCEL_APPOINTMENT", language="darija"),
+                TrainingMessage(content="mabghitch nji lrdv", actual_intent="CANCEL_APPOINTMENT", language="darija"),
+                TrainingMessage(content="mab9itch ghadi nji", actual_intent="CANCEL_APPOINTMENT", language="darija"),
+                TrainingMessage(content="ghadi n'annuler rendez vous dyali", actual_intent="CANCEL_APPOINTMENT", language="darija"),
+
+                # GENERAL_QUESTION
+                TrainingMessage(content="quelles sont vos horaires d'ouverture ?", actual_intent="GENERAL_QUESTION", language="fr"),
+                TrainingMessage(content="quel est le prix de la consultation ?", actual_intent="GENERAL_QUESTION", language="fr"),
+                TrainingMessage(content="où se trouve le cabinet médical ?", actual_intent="GENERAL_QUESTION", language="fr"),
+                TrainingMessage(content="what are your clinical hours?", actual_intent="GENERAL_QUESTION", language="en"),
+                TrainingMessage(content="how much does a consultation cost?", actual_intent="GENERAL_QUESTION", language="en"),
+                TrainingMessage(content="where is your clinic located?", actual_intent="GENERAL_QUESTION", language="en"),
+                TrainingMessage(content="ما هي أوقات عمل العيادة؟", actual_intent="GENERAL_QUESTION", language="ar"),
+                TrainingMessage(content="كم سعر الكشفية الطبية؟", actual_intent="GENERAL_QUESTION", language="ar"),
+                TrainingMessage(content="أين يقع موقع العيادة بالضبط؟", actual_intent="GENERAL_QUESTION", language="ar"),
+                TrainingMessage(content="fin jina", actual_intent="GENERAL_QUESTION", language="darija"),
+                TrainingMessage(content="fin blassa kaynin", actual_intent="GENERAL_QUESTION", language="darija"),
+                TrainingMessage(content="chhal taman dial rdv", actual_intent="GENERAL_QUESTION", language="darija"),
+                TrainingMessage(content="fin kayn lclinique", actual_intent="GENERAL_QUESTION", language="darija"),
+
+                # GREETING
+                TrainingMessage(content="bonjour", actual_intent="GREETING", language="fr"),
+                TrainingMessage(content="salut", actual_intent="GREETING", language="fr"),
+                TrainingMessage(content="bonjour, comment allez-vous ?", actual_intent="GREETING", language="fr"),
+                TrainingMessage(content="hello", actual_intent="GREETING", language="en"),
+                TrainingMessage(content="hi there", actual_intent="GREETING", language="en"),
+                TrainingMessage(content="hi there, can you help me?", actual_intent="GREETING", language="en"),
+                TrainingMessage(content="السلام عليكم", actual_intent="GREETING", language="ar"),
+                TrainingMessage(content="أهلاً وسهلاً بك", actual_intent="GREETING", language="ar"),
+                TrainingMessage(content="salam alaykom", actual_intent="GREETING", language="darija"),
+                TrainingMessage(content="salam cv labas", actual_intent="GREETING", language="darija"),
+                TrainingMessage(content="salamo alaykom khti", actual_intent="GREETING", language="darija"),
             ]
             db.add_all(t_msgs)
             db.commit()

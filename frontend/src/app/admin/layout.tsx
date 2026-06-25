@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Activity, CalendarDays, AlertTriangle, Home, Users, BarChart, LogOut, FileText } from "lucide-react";
+import { Activity, CalendarDays, AlertTriangle, Home, Users, BarChart, LogOut, FileText, Bot } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,7 @@ export default function AdminLayout({
           { href: "/admin/dashboard", label: "Dashboard", icon: Activity },
           { href: "/admin/stats", label: "Statistiques", icon: BarChart },
           { href: "/admin/kpi", label: "KPI", icon: Activity },
+          { href: "/admin/ai", label: "Assistant IA", icon: Bot },
         ];
       default:
         return [];

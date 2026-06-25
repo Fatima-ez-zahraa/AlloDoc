@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, CalendarDays, MessageCircle, ArrowRight, ShieldCheck, PlayCircle, Zap } from "lucide-react";
+import { CalendarDays, MessageCircle, ArrowRight, ShieldCheck, PlayCircle, Zap } from "lucide-react";
 
 export default function Home() {
   return (
